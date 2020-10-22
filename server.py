@@ -11,27 +11,18 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def my_home():
+def mia_home():
     return redirect('/scrapping')
 
 
-@app.route('/lexrank/<sumber>/<index>', methods=['GET', 'POST'])
-def mia_lexrank(sumber, index):
+@app.route('/lexrank', methods=['GET', 'POST'])
+def mia_lexranknew():
     if request.method == 'GET':
-        return render_template('lexrank_form.html', sumber=sumber, index=str(index))
+        return render_template('lexrank_form.html')
     elif request.method == 'POST':
         dataForm = request.form.to_dict()
-        pathFile = './db/'+sumber+str(index)+'.txt'
-        with open(pathFile, mode='r') as f:
-            content = f.read().splitlines()
-            isiBerita = ' '.join(map(str, content[2:]))
-            # sentences = isiBerita.split(".")
 
-            data = {
-                'judulBerita': content[0],
-                'isiBerita': isiBerita,
-                'resumeBerita': getResume(content[2:], dataForm['summary'], float(dataForm['threshold']))
-            }
+        data = getDataFromBeberapaBerita(dataForm)
 
         return render_template('lexrank_submit.html', data=data)
 
@@ -42,7 +33,8 @@ def mia_scrapping():
         data = request.form.to_dict()
 
         # dapetin list berita yang ada di portal berita
-        data["listBerita"] = getDataBeritaFromKeyword(data["keyword"].replace(" ", "+"))
+        data["listBerita"] = getDataBeritaFromKeyword(
+            data["keyword"].replace(" ", "+"))
 
         # dapetin full artikelnya lalu dimasukin ke db
         saveArticleFromListBerita(data["listBerita"])
@@ -53,10 +45,68 @@ def mia_scrapping():
         return render_template('scrapping_form.html')
 
 
+def getDataFromBeberapaBerita(dataForm):
+    listBerita = []
+    sentences = []
+
+    for xd in range(int(dataForm['detik'])):
+        pathFileD = './db/'+'detik.com'+str(xd)+'.txt'
+        with open(pathFileD, mode='r') as detikFile:
+            content = detikFile.read().splitlines()
+            isiContent = ' '.join(map(str, content[2:]))
+            listBerita.append({
+                'judul': content[0],
+                'isiBerita': isiContent,
+                'sumber': 'detik.com'
+            })
+            sentences.extend(content[2:])
+
+    for xc in range(int(dataForm['cnnindonesia'])):
+        pathFileC = './db/'+'cnnindonesia.com'+str(xc)+'.txt'
+        with open(pathFileC, mode='r') as cnnFile:
+            content = cnnFile.read().splitlines()
+            isiContent = ' '.join(map(str, content[2:]))
+            listBerita.append({
+                'judul': content[0],
+                'isiBerita': isiContent,
+                'sumber': 'cnnindonesia.com'
+            })
+            sentences.extend(content[2:])
+
+    for xa in range(int(dataForm['antaranews'])):
+        pathFileA = './db/'+'antaranews.com'+str(xa)+'.txt'
+        with open(pathFileA, mode='r') as antaraFile:
+            content = antaraFile.read().splitlines()
+            isiContent = ' '.join(map(str, content[2:]))
+            listBerita.append({
+                'judul': content[0],
+                'isiBerita': isiContent,
+                'sumber': 'antaranews.com'
+            })
+            sentences.extend(content[2:])
+
+    # Bersihkan Sentences Dari empty string
+    cleanSentences = [string for string in sentences if string != ""]
+    cleanSentences2 = [string for string in cleanSentences if string != " "]
+
+    # get Resume berita
+    resumeBerita = getResume(
+        cleanSentences2, dataForm['summary'], float(dataForm['threshold']))
+
+    data = {
+        'listBerita': listBerita,
+        'sentences': sentences,
+        'resumeBerita': resumeBerita,
+        'jumlahBerita': len(listBerita)
+    }
+
+    return data
+
+
 def getResume(sentences, summary_size, threshold):
     documents = []
     documents_dir = Path('./db')
-    stopwords={}
+    stopwords = {}
     stopwords_dir = Path('./static/stopwords-id.txt')
 
     for file_path in documents_dir.files('*.txt'):
@@ -70,7 +120,8 @@ def getResume(sentences, summary_size, threshold):
 
     lxr = LexRank(documents, stopwords=stopwords['id'])
 
-    summary = lxr.get_summary(sentences, summary_size=int(summary_size) , threshold=threshold)
+    summary = lxr.get_summary(sentences, summary_size=int(
+        summary_size), threshold=threshold)
 
     return summary
 

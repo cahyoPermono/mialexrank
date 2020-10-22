@@ -35,7 +35,7 @@
       </div>
       <div class="row">
         <div class="col-sm">
-          <form action={{index}} method="POST">
+          <form action="" method="POST">
             <div class="form-group">
               <label for="thresholdSelect">Threshold</label>
               <select name="threshold" class="form-control" id="thresholdSelect">
@@ -49,6 +49,7 @@
                 <option>0.8</option>
                 <option>0.9</option>
               </select>
+            </div>
             <div class="form-group">
               <label for="inputSummary">Jumlah Summary</label>
               <input
@@ -58,6 +59,36 @@
                 id="inputSummary"
                 value="5"
               />
+            </div>
+            <div class="form-group">
+              <label for="detikSelect">Jumlah Berita Detik News</label>
+              <select name="detik" class="form-control" id="detikSelect">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cnnSelect">Jumlah Berita CNN Indonesia</label>
+              <select name="cnnindonesia" class="form-control" id="cnnSelect">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="antaraSelect">Jumlah Berita Antara News</label>
+              <select name="antaranews" class="form-control" id="antaraSelect">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
             </div>
             <button type="submit" class="btn btn-primary">Mulai Lexrank</button>
           </form>

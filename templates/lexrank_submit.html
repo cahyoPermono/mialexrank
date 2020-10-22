@@ -29,20 +29,26 @@
     <div class="container">
       <div class="row mb-5 mt-2">
         <div class="display-4 text-center col-sm">
-          Lexrank Berita {{data['judulBerita']}}
+          Lexrank Resume Berita Dari Total {{data.jumlahBerita}} Berita
         </div>
       </div>
       <div class="row">
         <div class="col-sm" text-center>
           <h1>Berita Yang Dirangkum</h1>
-          <p class="lead text-justify">
-            {{data['isiBerita']}}
-          </p>
+          {% for item in data['listBerita'] %}
+          <div class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{item.judul}}</h5>
+              <small><button class="btn btn-secondary">View</button></small>
+            </div>
+            <small>{{item.sumber}}</small>
+          </div>
+          {% endfor %}
         </div>
         <div class="col-sm" text-center>
           <h1>Hasil Rangkuman</h1>
           <p class="lead text-justify">
-            Hasil Rangkuman {{data['judulBerita']}} sebagai berikut :
+            Hasil Rangkuman sebagai berikut :
             <ul>
               {% for item in data['resumeBerita'] %}
               <li>{{item}}</li> 
