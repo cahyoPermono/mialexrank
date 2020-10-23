@@ -57,7 +57,8 @@ def getDataFromBeberapaBerita(dataForm):
             listBerita.append({
                 'judul': content[0],
                 'isiBerita': isiContent,
-                'sumber': 'detik.com'
+                'sumber': 'detik.com',
+                'modalId': 'detikcom'+str(xd)
             })
             sentences.extend(content[2:])
 
@@ -69,7 +70,8 @@ def getDataFromBeberapaBerita(dataForm):
             listBerita.append({
                 'judul': content[0],
                 'isiBerita': isiContent,
-                'sumber': 'cnnindonesia.com'
+                'sumber': 'cnnindonesia.com',
+                'modalId': 'cnnindonesiacom'+str(xc)
             })
             sentences.extend(content[2:])
 
@@ -81,7 +83,8 @@ def getDataFromBeberapaBerita(dataForm):
             listBerita.append({
                 'judul': content[0],
                 'isiBerita': isiContent,
-                'sumber': 'antaranews.com'
+                'sumber': 'antaranews.com',
+                'modalId': 'antaranewscom'+str(xa)
             })
             sentences.extend(content[2:])
 
@@ -188,8 +191,6 @@ def saveArticleFromListBerita(listBerita):
 
     for portal in listBerita:
         for idxArticle, article in enumerate(listBerita[portal]):
-            pprint.pprint(article)
-
             resArticle = requests.get(article["link"])
             soupArticle = BeautifulSoup(resArticle.text, 'html.parser')
 
