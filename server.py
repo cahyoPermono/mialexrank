@@ -246,15 +246,18 @@ def saveArticleFromListBerita(listBerita):
                     ".post-content.clearfix")
 
                 # remove br element
-                for tag in articleAntara[0].select("br, div, script, span, p, ins"):
-                    tag.decompose()
+                if(articleAntara):
+                    for tag in articleAntara[0].select("br, div, script, span, p, ins"):
+                        tag.decompose()
+                    
+                    # save content paragraph to db
+                    try:
+                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myAntaraFile:
+                            myAntaraFile.write(articleAntara[0].getText())
+                    except IOError as err:
+                        raise err
 
-                # save content paragraph to db
-                try:
-                    with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myAntaraFile:
-                        myAntaraFile.write(articleAntara[0].getText())
-                except IOError as err:
-                    raise err
+                
 
 
 def deleteAllFiles():
