@@ -13,6 +13,7 @@ py -3 -m venv mialexrank
 4. pip install requests
 5. pip install lexrank
 6. pip install beautifulsoup4
+7. pip install datefinder
 
 # How to run
 1. source Scripts/activate

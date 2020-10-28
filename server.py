@@ -1,5 +1,6 @@
 import requests
 import pprint
+import datefinder
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, url_for, request, redirect
 import os
@@ -32,9 +33,12 @@ def mia_scrapping():
     if request.method == 'POST':
         data = request.form.to_dict()
 
+        tglMulai = '27/10/2020'
+        tglSelesai = '28/10/2020'
+
         # dapetin list berita yang ada di portal berita
-        data["listBerita"] = getDataBeritaFromKeyword(
-            data["keyword"].replace(" ", "+"))
+        data["listBerita"] = getDataBerita(
+            data["keyword"].replace(" ", "+"), tglMulai, tglSelesai, 'politik')
 
         # dapetin full artikelnya lalu dimasukin ke db
         saveArticleFromListBerita(data["listBerita"])
@@ -129,23 +133,61 @@ def getResume(sentences, summary_size, threshold):
     return summary
 
 
-def getDataBeritaFromKeyword(keyword):
+def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
+    
+    pages = 1
+    tglMulai = next(datefinder.find_dates(tglMulaiString), None)
+    tglSelesai = next(datefinder.find_dates(tglSelesaiString), None)
+
     listObjectDetik = []
-    # get berita dari detik
-    resDetik = requests.get(
-        'https://www.detik.com/search/searchall?query='+keyword)
-    soupDetik = BeautifulSoup(resDetik.text, 'html.parser')
-    # articleDetik = soupDetik.select('article')[0]
-    articleDetiks = soupDetik.select('article')
+    
+    dalamJangkauan = True
 
-    for articleDetik in articleDetiks:
-        objectDetik = {
-            "link": articleDetik.select('a')[0].get('href'),
-            "judul": articleDetik.select('a')[0].select('h2')[0].getText(),
-            "sumber": "detik.com"
-        }
+    while dalamJangkauan :
+        # get berita dari detik
+        resDetik = requests.get(
+            'https://www.detik.com/search/searchall?query='+keyword+'&siteid=2&sortby=time&page=+'+str(pages))
+        soupDetik = BeautifulSoup(resDetik.text, 'html.parser')
+        articleDetiks = soupDetik.select('article')
+        print('==========PAGES '+ str(pages))
+        for articleDetik in articleDetiks:
+            # mapping category karena tiap portal berita nama kategorinya berbeda beda
+            userCategory = mappingCategory('detik.com' , category)
 
-        listObjectDetik.append(objectDetik)
+            detikCategory = articleDetik.select('.category')[0].getText()
+
+            # kalauu kategori tidak sama lanjut loopingan selanjutnya
+            if detikCategory != userCategory:
+                continue
+
+            # remove category agar bisa dapat data tanggal
+            articleDetik.select('.date')[0].select('span')[0].decompose()
+
+            # get date article
+            dateDetikString = articleDetik.select('.date')[0].getText()
+            # convert jadi object datetime biar bisa di bandingkan
+            dateDetik = next(datefinder.find_dates(dateDetikString), None)
+
+            # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
+            if dateDetik > tglSelesai :
+                continue
+
+            print(dateDetik)
+            print(tglMulai)    
+            print(dateDetik < tglMulai)
+            # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
+            if dateDetik < tglMulai :
+                dalamJangkauan=False
+
+            objectDetik = {
+                "link": articleDetik.select('a')[0].get('href'),
+                "judul": articleDetik.select('a')[0].select('h2')[0].getText(),
+                "sumber": "detik.com"
+            }
+
+            listObjectDetik.append(objectDetik)
+        pages +=1
+
 
     # get berita dari cnn
     listObjectCnn = []
@@ -185,6 +227,10 @@ def getDataBeritaFromKeyword(keyword):
             "antaranews": listObjectAntara}
     return list
 
+def mappingCategory(sumber, category):
+    if(sumber == 'detik.com'):
+        if category == 'politik':
+            return 'detikNews'
 
 def saveArticleFromListBerita(listBerita):
     deleteAllFiles()
@@ -252,7 +298,7 @@ def saveArticleFromListBerita(listBerita):
                     
                     # save content paragraph to db
                     try:
-                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myAntaraFile:
+                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myAntaraFile:
                             myAntaraFile.write(articleAntara[0].getText())
                     except IOError as err:
                         raise err
