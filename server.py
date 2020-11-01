@@ -158,6 +158,9 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         soupDetik = BeautifulSoup(resDetik.text, 'html.parser')
         articleDetiks = soupDetik.select('article')
 
+        # print("Detik")
+        # print(pages)
+
         if len(articleDetiks) == 0:
             dalamJangkauan = False
 
@@ -229,8 +232,12 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             'https://www.jpnn.com/tag/'+keywordJpnn+'?page='+str(pages))
         soupJpnn = BeautifulSoup(resJpnn.text, 'html.parser')
 
-        articleJpnns = soupJpnn.select('.content-description')
+        # print("Jpnns")
+        # print(pages)
 
+        articleJpnns = soupJpnn.select('.content-description')
+        if len(articleJpnns) == 0:
+            dalamJangkauan = False
         for articleJpnn in articleJpnns:
 
             # mapping category karena tiap portal berita nama kategorinya berbeda beda
@@ -238,12 +245,21 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
 
             jpnnCategory = articleJpnn.select('h6 strong')[0].getText()
 
+            # print(userCategory)
+            # print(jpnnCategory)
+
             # kalauu kategori tidak sama lanjut loopingan selanjutnya
             if jpnnCategory != userCategory:
                 continue
 
             # get date article
             dateJpnnString = articleJpnn.select('h6 span')[0].getText()
+
+            # print(dateJpnn)
+            # print(search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
+            # print(dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
+            # print(tglMulai)
+            # print(tglSelesai)
 
             # cek perulangan khusus jpnn
             if dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1]:
@@ -282,6 +298,9 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         resAntara = requests.get(
             'https://www.antaranews.com/search/'+keyword+'/'+str(pages))
         soupAntara = BeautifulSoup(resAntara.text, 'html.parser')
+
+        # print("Antara")
+        # print(pages)
         # articleAntara = soupAntara.select(".post-content.clearfix article h3")[0]
         articleAntaras = soupAntara.select(".post-content.clearfix article")
 
