@@ -1,14 +1,19 @@
 import requests
 import pprint
-import datefinder
+import http.client
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, url_for, request, redirect
 import os
 import shutil
 from lexrank import STOPWORDS, LexRank
 from path import Path
+import fnmatch
+from dateparser.search import search_dates
 
 app = Flask(__name__)
+
+# biar g error pas ambil antaranews
+http.client._MAXHEADERS = 1000
 
 
 @app.route('/')
@@ -19,7 +24,10 @@ def mia_home():
 @app.route('/lexrank', methods=['GET', 'POST'])
 def mia_lexranknew():
     if request.method == 'GET':
-        return render_template('lexrank_form.html')
+        detikLen = len(fnmatch.filter(os.listdir('./db'), 'detik*.txt'))
+        antaraLen = len(fnmatch.filter(os.listdir('./db'), 'antara*.txt'))
+        jpnnLen = len(fnmatch.filter(os.listdir('./db'), 'jpnn*.txt'))
+        return render_template('lexrank_form.html', detikLen=detikLen, antaraLen=antaraLen, jpnnLen=jpnnLen)
     elif request.method == 'POST':
         dataForm = request.form.to_dict()
 
@@ -32,10 +40,9 @@ def mia_lexranknew():
 def mia_scrapping():
     if request.method == 'POST':
         data = request.form.to_dict()
-
-        tglMulai = '28/10/2020'
-        tglSelesai = '28/10/2020'
-        kategori = 'politik'
+        tglMulai = data['tglMulai']
+        tglSelesai = data['tglAkhir']
+        kategori = data['category']
 
         # dapetin list berita yang ada di portal berita
         data["listBerita"] = getDataBerita(
@@ -67,16 +74,16 @@ def getDataFromBeberapaBerita(dataForm):
             })
             sentences.extend(content[2:])
 
-    for xc in range(int(dataForm['cnnindonesia'])):
-        pathFileC = './db/'+'cnnindonesia.com'+str(xc)+'.txt'
-        with open(pathFileC, mode='r') as cnnFile:
-            content = cnnFile.read().splitlines()
+    for xc in range(int(dataForm['jpnn'])):
+        pathFileC = './db/'+'jpnn.com'+str(xc)+'.txt'
+        with open(pathFileC, mode='r') as jpnnFile:
+            content = jpnnFile.read().splitlines()
             isiContent = ' '.join(map(str, content[2:]))
             listBerita.append({
                 'judul': content[0],
                 'isiBerita': isiContent,
-                'sumber': 'cnnindonesia.com',
-                'modalId': 'cnnindonesiacom'+str(xc)
+                'sumber': 'jpnn.com',
+                'modalId': 'jpnncom'+str(xc)
             })
             sentences.extend(content[2:])
 
@@ -137,8 +144,8 @@ def getResume(sentences, summary_size, threshold):
 def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
 
     pages = 1
-    tglMulai = next(datefinder.find_dates(tglMulaiString), None)
-    tglSelesai = next(datefinder.find_dates(tglSelesaiString), None)
+    tglMulai = search_dates(tglMulaiString)[0][1]
+    tglSelesai = search_dates(tglSelesaiString)[0][1]
 
     listObjectDetik = []
 
@@ -150,6 +157,10 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             'https://www.detik.com/search/searchall?query='+keyword+'&siteid=2&sortby=time&page=+'+str(pages))
         soupDetik = BeautifulSoup(resDetik.text, 'html.parser')
         articleDetiks = soupDetik.select('article')
+
+        if len(articleDetiks) == 0:
+            dalamJangkauan = False
+
         for articleDetik in articleDetiks:
             # mapping category karena tiap portal berita nama kategorinya berbeda beda
             userCategory = mappingCategory('detik.com', category)
@@ -164,9 +175,10 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             articleDetik.select('.date')[0].select('span')[0].decompose()
 
             # get date article
-            dateDetikString = articleDetik.select('.date')[0].getText()
-            # convert jadi object datetime biar bisa di bandingkan
-            dateDetik = next(datefinder.find_dates(dateDetikString), None)
+            dateDetikString = articleDetik.select(
+                '.date')[0].getText().split(',')[1]
+            dateDetikString = dateDetikString[1:12]
+            dateDetik = search_dates(dateDetikString)[0][1]
 
             # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
             if dateDetik > tglSelesai:
@@ -175,10 +187,12 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
             if dateDetik < tglMulai:
                 dalamJangkauan = False
+                break
 
             objectDetik = {
                 "link": articleDetik.select('a')[0].get('href'),
                 "judul": articleDetik.select('a')[0].select('h2')[0].getText(),
+                "tglBerita": dateDetikString,
                 "sumber": "detik.com"
             }
 
@@ -201,29 +215,63 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         }
 
         listObjectCnn.append(objectCnn)
-    
+
     # get berita dari jpnn.com
     listObjectJpnn = []
+    pages = 1
+    dalamJangkauan = True
+    dateJpnn = tglSelesai
+    while dalamJangkauan:
+        # ganti spasi keyword karena di jpnn g bisa pakai + untuk spasinya
+        keywordJpnn = keyword.replace("+", "-")
 
-    # ganti spasi keyword karena di jpnn g bisa pakai + untuk spasinya
-    keywordJpnn = keyword.replace("+", "-")
+        resJpnn = requests.get(
+            'https://www.jpnn.com/tag/'+keywordJpnn+'?page='+str(pages))
+        soupJpnn = BeautifulSoup(resJpnn.text, 'html.parser')
 
-    resJpnn = requests.get(
-        'https://www.jpnn.com/tag/'+keywordJpnn+'?page='+str(pages))
-    soupJpnn = BeautifulSoup(resJpnn.text, 'html.parser')
+        articleJpnns = soupJpnn.select('.content-description')
 
-    articleJpnns = soupJpnn.select('.content-description')
+        for articleJpnn in articleJpnns:
 
-    for articleJpnn in articleJpnns:
-        pprint.pprint(articleJpnn)
-        pprint.pprint('====')
-        # objectCnn = {
-        #     "link": articleCnn.select('a')[0].get('href'),
-        #     "judul": articleCnn.select('a')[0].select('h2')[0].getText(),
-        #     "sumber": "cnnindonesia.com"
-        # }
+            # mapping category karena tiap portal berita nama kategorinya berbeda beda
+            userCategory = mappingCategory('jpnn.com', category)
 
-        # listObjectCnn.append(objectCnn)
+            jpnnCategory = articleJpnn.select('h6 strong')[0].getText()
+
+            # kalauu kategori tidak sama lanjut loopingan selanjutnya
+            if jpnnCategory != userCategory:
+                continue
+
+            # get date article
+            dateJpnnString = articleJpnn.select('h6 span')[0].getText()
+
+            # cek perulangan khusus jpnn
+            if dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1]:
+                dalamJangkauan = False
+                break
+
+            # convert jadi object datetime biar bisa di bandingkan
+            dateJpnn = search_dates(articleJpnn.select('h6 span')[
+                                    0].getText().split(',')[1])[0][1]
+
+            # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
+            if dateJpnn > tglSelesai:
+                continue
+
+            # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
+            if dateJpnn < tglMulai:
+                dalamJangkauan = False
+                continue
+
+            objectJpnn = {
+                "link": articleJpnn.select('h1 a')[0].get('href'),
+                "judul": articleJpnn.select('h1 a')[0].get('title'),
+                "tglBerita": dateJpnnString,
+                "sumber": "jpnn.com"
+            }
+
+            listObjectJpnn.append(objectJpnn)
+        pages += 1
 
     # get berita dari Antara
     listObjectAntara = []
@@ -237,6 +285,9 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         # articleAntara = soupAntara.select(".post-content.clearfix article h3")[0]
         articleAntaras = soupAntara.select(".post-content.clearfix article")
 
+        if len(articleAntaras) == 0:
+            dalamJangkauan = False
+
         for articleAntara in articleAntaras:
             # mapping category karena tiap portal berita nama kategorinya berbeda beda
             userCategory = mappingCategory('antaranews.com', category)
@@ -248,8 +299,8 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             if antaraCategory != userCategory:
                 continue
 
-            antaraDate = articleAntara.select('p span')[0].getText()
-            antaraDate = next(datefinder.find_dates(antaraDate), None)
+            antaraDateString = articleAntara.select('p span')[0].getText()
+            antaraDate = search_dates(antaraDateString.lstrip())[0][1]
 
             # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
             if antaraDate > tglSelesai:
@@ -258,10 +309,12 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
             if antaraDate < tglMulai:
                 dalamJangkauan = False
+                continue
 
             objectAntara = {
                 "link": articleAntara.select('h3 a')[0].get('href'),
                 "judul": articleAntara.select('h3 a')[0].getText(),
+                "tglBerita": antaraDate,
                 "sumber": "antaranews.com"
             }
 
@@ -269,7 +322,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         pages += 1
 
     list = {"detik": listObjectDetik, "cnn": listObjectCnn,
-            "antaranews": listObjectAntara}
+            "antaranews": listObjectAntara, "jpnn": listObjectJpnn}
     return list
 
 
@@ -277,9 +330,24 @@ def mappingCategory(sumber, category):
     if(sumber == 'detik.com'):
         if category == 'politik':
             return 'detikNews'
+        elif category == 'sports':
+            return 'detikSport'
+        elif category == 'teknologi':
+            return 'detikInet'
     elif(sumber == 'antaranews.com'):
         if category == 'politik':
             return 'Politik'
+        elif category == 'sports':
+            return 'Olahraga'
+        elif category == 'teknologi':
+            return 'Tekno'
+    elif(sumber == 'jpnn.com'):
+        if category == 'politik':
+            return 'Politik'
+        elif category == 'sports':
+            return 'OLAHRAGA'
+        elif category == 'teknologi':
+            return 'Teknologi'
 
 
 def saveArticleFromListBerita(listBerita):
@@ -306,7 +374,7 @@ def saveArticleFromListBerita(listBerita):
 
                     # save content paragraph to db
                     try:
-                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myDetikFile:
+                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myDetikFile:
                             myDetikFile.write(parag.getText() + '\n')
                     except IOError as err:
                         raise err
@@ -325,7 +393,7 @@ def saveArticleFromListBerita(listBerita):
                 for parag in articleCnn:
                     # save content paragraph to db
                     try:
-                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
+                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
                             myCnnFile.write(parag.getText() + '\n')
                     except IOError as err:
                         raise err
@@ -350,6 +418,24 @@ def saveArticleFromListBerita(listBerita):
                     try:
                         with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myAntaraFile:
                             myAntaraFile.write(articleAntara[0].getText())
+                    except IOError as err:
+                        raise err
+
+            elif article['sumber'] == 'jpnn.com':
+                # save Judul to db
+                try:
+                    with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
+                        myCnnFile.write(article['judul'] + '\n\n')
+                except IOError as err:
+                    raise err
+
+                articleJnn = soupArticle.select(".page-content p")
+
+                for parag in articleJnn:
+                    # save content paragraph to db
+                    try:
+                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
+                            myCnnFile.write(parag.getText() + '\n')
                     except IOError as err:
                         raise err
 
