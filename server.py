@@ -203,91 +203,91 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         pages += 1
 
     # get berita dari cnn
-    listObjectCnn = []
-    resCnn = requests.get(
-        'https://www.cnnindonesia.com/search/?query='+keyword)
-    soupCnn = BeautifulSoup(resCnn.text, 'html.parser')
-    # articleCnn = soupCnn.select('.list')[0].select('article')[0]
-    articleCnns = soupCnn.select('.list')[0].select('article')
+    # listObjectCnn = []
+    # resCnn = requests.get(
+    #     'https://www.cnnindonesia.com/search/?query='+keyword)
+    # soupCnn = BeautifulSoup(resCnn.text, 'html.parser')
+    # # articleCnn = soupCnn.select('.list')[0].select('article')[0]
+    # articleCnns = soupCnn.select('.list')[0].select('article')
 
-    for articleCnn in articleCnns:
-        objectCnn = {
-            "link": articleCnn.select('a')[0].get('href'),
-            "judul": articleCnn.select('a')[0].select('h2')[0].getText(),
-            "sumber": "cnnindonesia.com"
-        }
+    # for articleCnn in articleCnns:
+    #     objectCnn = {
+    #         "link": articleCnn.select('a')[0].get('href'),
+    #         "judul": articleCnn.select('a')[0].select('h2')[0].getText(),
+    #         "sumber": "cnnindonesia.com"
+    #     }
 
-        listObjectCnn.append(objectCnn)
+    #     listObjectCnn.append(objectCnn)
 
     # get berita dari jpnn.com
-    listObjectJpnn = []
-    pages = 1
-    dalamJangkauan = True
-    dateJpnn = tglSelesai
-    while dalamJangkauan:
-        # ganti spasi keyword karena di jpnn g bisa pakai + untuk spasinya
-        keywordJpnn = keyword.replace("+", "-")
+    # listObjectJpnn = []
+    # pages = 1
+    # dalamJangkauan = True
+    # dateJpnn = tglSelesai
+    # while dalamJangkauan:
+    #     # ganti spasi keyword karena di jpnn g bisa pakai + untuk spasinya
+    #     keywordJpnn = keyword.replace("+", "-")
 
-        resJpnn = requests.get(
-            'https://www.jpnn.com/tag/'+keywordJpnn+'?page='+str(pages))
-        soupJpnn = BeautifulSoup(resJpnn.text, 'html.parser')
+    #     resJpnn = requests.get(
+    #         'https://www.jpnn.com/tag/'+keywordJpnn+'?page='+str(pages))
+    #     soupJpnn = BeautifulSoup(resJpnn.text, 'html.parser')
 
-        # print("Jpnns")
-        # print(pages)
+    #     # print("Jpnns")
+    #     # print(pages)
 
-        articleJpnns = soupJpnn.select('.content-description')
-        if len(articleJpnns) == 0:
-            dalamJangkauan = False
-        for articleJpnn in articleJpnns:
+    #     articleJpnns = soupJpnn.select('.content-description')
+    #     if len(articleJpnns) == 0:
+    #         dalamJangkauan = False
+    #     for articleJpnn in articleJpnns:
 
-            # mapping category karena tiap portal berita nama kategorinya berbeda beda
-            userCategory = mappingCategory('jpnn.com', category)
+    #         # mapping category karena tiap portal berita nama kategorinya berbeda beda
+    #         userCategory = mappingCategory('jpnn.com', category)
 
-            jpnnCategory = articleJpnn.select('h6 strong')[0].getText()
+    #         jpnnCategory = articleJpnn.select('h6 strong')[0].getText()
 
-            # print(userCategory)
-            # print(jpnnCategory)
+    #         # print(userCategory)
+    #         # print(jpnnCategory)
 
-            # kalauu kategori tidak sama lanjut loopingan selanjutnya
-            if jpnnCategory != userCategory:
-                continue
+    #         # kalauu kategori tidak sama lanjut loopingan selanjutnya
+    #         if jpnnCategory != userCategory:
+    #             continue
 
-            # get date article
-            dateJpnnString = articleJpnn.select('h6 span')[0].getText()
+    #         # get date article
+    #         dateJpnnString = articleJpnn.select('h6 span')[0].getText()
 
-            # print(dateJpnn)
-            # print(search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
-            # print(dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
-            # print(tglMulai)
-            # print(tglSelesai)
+    #         # print(dateJpnn)
+    #         # print(search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
+    #         # print(dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1])
+    #         # print(tglMulai)
+    #         # print(tglSelesai)
 
-            # cek perulangan khusus jpnn
-            if dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1]:
-                dalamJangkauan = False
-                break
+    #         # cek perulangan khusus jpnn
+    #         if dateJpnn < search_dates(articleJpnn.select('h6 span')[0].getText().split(',')[1])[0][1]:
+    #             dalamJangkauan = False
+    #             break
 
-            # convert jadi object datetime biar bisa di bandingkan
-            dateJpnn = search_dates(articleJpnn.select('h6 span')[
-                                    0].getText().split(',')[1])[0][1]
+    #         # convert jadi object datetime biar bisa di bandingkan
+    #         dateJpnn = search_dates(articleJpnn.select('h6 span')[
+    #                                 0].getText().split(',')[1])[0][1]
 
-            # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
-            if dateJpnn > tglSelesai:
-                continue
+    #         # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
+    #         if dateJpnn > tglSelesai:
+    #             continue
 
-            # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
-            if dateJpnn < tglMulai:
-                dalamJangkauan = False
-                continue
+    #         # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
+    #         if dateJpnn < tglMulai:
+    #             dalamJangkauan = False
+    #             continue
 
-            objectJpnn = {
-                "link": articleJpnn.select('h1 a')[0].get('href'),
-                "judul": articleJpnn.select('h1 a')[0].get('title'),
-                "tglBerita": dateJpnnString,
-                "sumber": "jpnn.com"
-            }
+    #         objectJpnn = {
+    #             "link": articleJpnn.select('h1 a')[0].get('href'),
+    #             "judul": articleJpnn.select('h1 a')[0].get('title'),
+    #             "tglBerita": dateJpnnString,
+    #             "sumber": "jpnn.com"
+    #         }
 
-            listObjectJpnn.append(objectJpnn)
-        pages += 1
+    #         listObjectJpnn.append(objectJpnn)
+    #     pages += 1
 
     # get berita dari Antara
     listObjectAntara = []
@@ -430,12 +430,16 @@ def mappingCategory(sumber, category):
         if category == 'politik':
             return 'Politik'
         elif category == 'sports':
-            return 'OLAHRAGA'
+            return 'Olahraga'
         elif category == 'teknologi':
             return 'Teknologi'
     elif(sumber == 'cnbcindonesia.com'):
         if category == 'politik':
             return 'News'
+        elif category == 'teknologi':
+            return 'Tech'
+        elif category == 'sports':
+            return 'Lifestyle'
 
 
 def saveArticleFromListBerita(listBerita):
@@ -466,24 +470,24 @@ def saveArticleFromListBerita(listBerita):
                     except IOError as err:
                         raise err
 
-            elif article['sumber'] == 'cnnindonesia.com':
-                # save Judul to db
-                try:
-                    with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
-                        myCnnFile.write(article['judul'] + '\n\n')
-                except IOError as err:
-                    raise err
+            # elif article['sumber'] == 'cnnindonesia.com':
+            #     # save Judul to db
+            #     try:
+            #         with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
+            #             myCnnFile.write(article['judul'] + '\n\n')
+            #     except IOError as err:
+            #         raise err
 
-                articleCnn = soupArticle.select(
-                    "#detikdetailtext p")
+            #     articleCnn = soupArticle.select(
+            #         "#detikdetailtext p")
 
-                for parag in articleCnn:
-                    # save content paragraph to db
-                    try:
-                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
-                            myCnnFile.write(parag.getText() + '\n')
-                    except IOError as err:
-                        raise err
+            #     for parag in articleCnn:
+            #         # save content paragraph to db
+            #         try:
+            #             with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
+            #                 myCnnFile.write(parag.getText() + '\n')
+            #         except IOError as err:
+            #             raise err
 
             elif article['sumber'] == 'antaranews.com':
                 # save Judul to db
@@ -508,23 +512,23 @@ def saveArticleFromListBerita(listBerita):
                 except IOError as err:
                     raise err
 
-            elif article['sumber'] == 'jpnn.com':
-                # save Judul to db
-                try:
-                    with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
-                        myCnnFile.write(article['judul'] + '\n\n')
-                except IOError as err:
-                    raise err
+            # elif article['sumber'] == 'jpnn.com':
+            #     # save Judul to db
+            #     try:
+            #         with open('./db/'+article['sumber']+str(idxArticle)+'.txt', mode='a') as myCnnFile:
+            #             myCnnFile.write(article['judul'] + '\n\n')
+            #     except IOError as err:
+            #         raise err
 
-                articleJnn = soupArticle.select(".page-content p")
+            #     articleJnn = soupArticle.select(".page-content p")
 
-                for parag in articleJnn:
-                    # save content paragraph to db
-                    try:
-                        with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
-                            myCnnFile.write(parag.getText() + '\n')
-                    except IOError as err:
-                        raise err
+            #     for parag in articleJnn:
+            #         # save content paragraph to db
+            #         try:
+            #             with open('./db/'+article['sumber']+str(idxArticle)+'.txt', encoding="utf-8", mode='a') as myCnnFile:
+            #                 myCnnFile.write(parag.getText() + '\n')
+            #         except IOError as err:
+            #             raise err
             
             elif article['sumber'] == 'cnbcindonesia.com':
                 # save Judul to db
