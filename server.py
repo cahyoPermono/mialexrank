@@ -293,6 +293,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
     listObjectAntara = []
     pages = 1
     dalamJangkauan = True
+    antaraDate = tglSelesai
     while dalamJangkauan:
 
         resAntara = requests.get(
@@ -301,6 +302,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
 
         # print("Antara")
         # print(pages)
+        # print('https://www.antaranews.com/search/'+keyword+'/'+str(pages))
         # articleAntara = soupAntara.select(".post-content.clearfix article h3")[0]
         articleAntaras = soupAntara.select(".post-content.clearfix article")
 
@@ -319,6 +321,12 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
                 continue
 
             antaraDateString = articleAntara.select('p span')[0].getText()
+
+            # cek perulangan khusus jpnn
+            if antaraDate < search_dates(antaraDateString.lstrip())[0][1]:
+                dalamJangkauan = False
+                break
+
             antaraDate = search_dates(antaraDateString.lstrip())[0][1]
 
             # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
@@ -353,8 +361,8 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         articleCnbcindonesias = soupCnbcindonesia.select(
             '.list.media_rows.middle.thumb.terbaru.gtm_indeks_feed')[0].select('article')
 
-        print("cnbc")
-        print(pages)
+        # print("cnbc")
+        # print(pages)
         if len(articleCnbcindonesias) == 0:
             dalamJangkauan = False
 
@@ -365,8 +373,8 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             cnbcIndonesiaCategory = articleCnbcindonesia.select('a div span span')[
                 0].getText()
 
-            print(userCategory)
-            print(cnbcIndonesiaCategory)
+            # print(userCategory)
+            # print(cnbcIndonesiaCategory)
 
             # kalauu kategori tidak sama lanjut loopingan selanjutnya
             if cnbcIndonesiaCategory != userCategory:
@@ -379,12 +387,12 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             dateCnbcString = soupCnbcForDate.select('.date')[0].getText()
             dateCnbc = search_dates(dateCnbcString)[0][1].replace(hour=0, minute=0, second=0, microsecond=0)
 
-            print(dateCnbcString)
-            print(dateCnbc)
-            print(tglSelesai)
-            print(tglMulai)
-            print(dateCnbc > tglSelesai)
-            print(dateCnbc < tglMulai)
+            # print(dateCnbcString)
+            # print(dateCnbc)
+            # print(tglSelesai)
+            # print(tglMulai)
+            # print(dateCnbc > tglSelesai)
+            # print(dateCnbc < tglMulai)
             # cek kalau tanggal berita tidak lebih baru dari jangka waktu yang ditentukan
             if dateCnbc > tglSelesai:
                 continue
@@ -394,7 +402,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
                 dalamJangkauan = False
                 break
             
-            print('masuk 1')
+            # print('masuk 1')
             objectCnbcIndonesia = {
                 "link": articleCnbcindonesia.select('a')[0].get('href'),
                 "judul": judulCnbc,
@@ -403,7 +411,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             }
 
             listObjectCnbcindonesia.append(objectCnbcIndonesia)
-        print(listObjectCnbcindonesia)
+        # print(listObjectCnbcindonesia)
         pages += 1
 
     list = {"detik": listObjectDetik,
@@ -541,7 +549,7 @@ def saveArticleFromListBerita(listBerita):
                 articleCnbc = soupArticle.select(
                     ".detail_text p")
 
-                pprint.pprint(articleCnbc)
+                # pprint.pprint(articleCnbc)
                 for parag in articleCnbc:
 
                     for tag in parag.select("br, div, strong, a, p, ins"):
