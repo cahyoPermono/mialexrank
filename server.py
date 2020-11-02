@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from flask import Flask, render_template, url_for, request, redirect
 import os
 import shutil
-from lexrank import STOPWORDS, LexRankd
+from lexrank import STOPWORDS, LexRank
 from path import Path
 import fnmatch
 from dateparser.search import search_dates
