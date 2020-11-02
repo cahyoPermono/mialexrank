@@ -5,10 +5,11 @@ from bs4 import BeautifulSoup
 from flask import Flask, render_template, url_for, request, redirect
 import os
 import shutil
-from lexrank import STOPWORDS, LexRank
+from lexrank import STOPWORDS, LexRankd
 from path import Path
 import fnmatch
 from dateparser.search import search_dates
+import datetime
 
 app = Flask(__name__)
 
@@ -293,7 +294,7 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
     listObjectAntara = []
     pages = 1
     dalamJangkauan = True
-    antaraDate = tglSelesai
+    antaraDate = datetime.datetime.now()
     while dalamJangkauan:
 
         resAntara = requests.get(
@@ -316,14 +317,21 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             # get kategori dari artikel di antaranews
             antaraCategory = articleAntara.select('p a')[0].getText()
 
+            # print(userCategory)
+            # print(antaraCategory)
+
             # kalauu kategori tidak sama lanjut loopingan selanjutnya
             if antaraCategory != userCategory:
                 continue
 
             antaraDateString = articleAntara.select('p span')[0].getText()
 
+            # print(antaraDate)
+            # print(search_dates(antaraDateString.lstrip())[0][1])
+            # print(tglMulai)
+            # print(tglSelesai)
             # cek perulangan khusus jpnn
-            if antaraDate < search_dates(antaraDateString.lstrip())[0][1]:
+            if pages != 1 and antaraDate < search_dates(antaraDateString.lstrip())[0][1]:
                 dalamJangkauan = False
                 break
 
