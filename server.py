@@ -406,8 +406,8 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         print(listObjectCnbcindonesia)
         pages += 1
 
-    list = {"detik": listObjectDetik, "cnn": listObjectCnn,
-            "antaranews": listObjectAntara, "jpnn": listObjectJpnn, "cnbc": listObjectCnbcindonesia}
+    list = {"detik": listObjectDetik,
+            "antaranews": listObjectAntara, "cnbc": listObjectCnbcindonesia}
     return list
 
 
