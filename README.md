@@ -15,6 +15,7 @@ py -3 -m venv mialexrank
 5. pip install lexrank
 6. pip install beautifulsoup4
 7. pip install dateparser
+8. pip install nltk
 
 # How to run
 1. source Scripts/activate

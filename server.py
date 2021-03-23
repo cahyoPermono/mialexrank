@@ -10,6 +10,9 @@ from path import Path
 import fnmatch
 from dateparser.search import search_dates
 import datetime
+# import nltk
+# nltk.download('punkt')
+from nltk import tokenize
 
 app = Flask(__name__)
 
@@ -65,41 +68,115 @@ def getDataFromBeberapaBerita(dataForm):
     for xd in range(int(dataForm['detik'])):
         pathFileD = './db/'+'detik.com'+str(xd)+'.txt'
         with open(pathFileD, mode='r') as detikFile:
-            content = detikFile.read().splitlines()
-            isiContent = ' '.join(map(str, content[2:]))
-            listBerita.append({
-                'judul': content[0],
-                'isiBerita': isiContent,
-                'sumber': 'detik.com',
-                'modalId': 'detikcom'+str(xd)
-            })
-            sentences.extend(content[2:])
+            # variable untuk nampung judul
+            judul=""
+            # variable untuk Isi Content
+            isiContent = ""
+            for cnt, line in enumerate(detikFile):
+                if cnt == 0:
+                    judul = line
+                elif cnt == 1 or line[0] == '[':
+                    continue
+                isiContent = isiContent + line  
 
-    for xc in range(int(dataForm['cnbc'])):
-        pathFileC = './db/'+'cnbcindonesia.com'+str(xc)+'.txt'
-        with open(pathFileC, mode='r') as cnbcFile:
-            content = cnbcFile.read().splitlines()
-            isiContent = ' '.join(map(str, content[2:]))
-            listBerita.append({
-                'judul': content[0],
-                'isiBerita': isiContent,
-                'sumber': 'cnbcindonesia.com',
-                'modalId': 'cnbcindonesiacom'+str(xc)
-            })
-            sentences.extend(content[2:])
+                # split kalimat berdasarkan . untuk dilakukan lexrank
+                contents = (tokenize.sent_tokenize(line))
+                # masukan kalimat ke sentences untuk dilakukan lexrank di step selanjutnya
+                for content in contents:
+                    sentences.append(content)
 
-    for xa in range(int(dataForm['antaranews'])):
-        pathFileA = './db/'+'antaranews.com'+str(xa)+'.txt'
-        with open(pathFileA, mode='r') as antaraFile:
-            content = antaraFile.read().splitlines()
-            isiContent = ' '.join(map(str, content[2:]))
-            listBerita.append({
-                'judul': content[0],
-                'isiBerita': isiContent,
-                'sumber': 'antaranews.com',
-                'modalId': 'antaranewscom'+str(xa)
-            })
-            sentences.extend(content[2:])
+        # Isi data2 untuk ditampilkan di kolom sumber berita
+        listBerita.append({
+            'judul': judul,
+            'isiBerita': isiContent,
+            'sumber': 'detik.com',
+            'modalId': 'detikcom'+str(xd)
+        })
+    
+    # cnbc
+    for xd in range(int(dataForm['cnbc'])):
+        pathFileD = './db/'+'cnbcindonesia.com'+str(xd)+'.txt'
+        with open(pathFileD, mode='r') as cnbcFile:
+            # variable untuk nampung judul
+            judul=""
+            # variable untuk Isi Content
+            isiContent = ""
+            for cnt, line in enumerate(cnbcFile):
+                if cnt == 0:
+                    judul = line
+                elif cnt == 1 or line[0] == '[':
+                    continue
+                isiContent = isiContent + line  
+
+                # split kalimat berdasarkan . untuk dilakukan lexrank
+                contents = (tokenize.sent_tokenize(line))
+                # masukan kalimat ke sentences untuk dilakukan lexrank di step selanjutnya
+                for content in contents:
+                    sentences.append(content)
+
+        # Isi data2 untuk ditampilkan di kolom sumber berita
+        listBerita.append({
+            'judul': judul,
+            'isiBerita': isiContent,
+            'sumber': 'cnbcindonesia.com',
+            'modalId': 'cnbcindonesiacom'+str(xd)
+        })
+    
+    # antaranews
+    for xd in range(int(dataForm['antaranews'])):
+        pathFileD = './db/'+'antaranews.com'+str(xd)+'.txt'
+        with open(pathFileD, mode='r') as antaraFile:
+            # variable untuk nampung judul
+            judul=""
+            # variable untuk Isi Content
+            isiContent = ""
+            for cnt, line in enumerate(antaraFile):
+                if cnt == 0:
+                    judul = line
+                elif cnt == 1 or line[0] == '[':
+                    continue
+                isiContent = isiContent + line  
+
+                # split kalimat berdasarkan . untuk dilakukan lexrank
+                contents = (tokenize.sent_tokenize(line))
+                # masukan kalimat ke sentences untuk dilakukan lexrank di step selanjutnya
+                for content in contents:
+                    sentences.append(content)
+
+        # Isi data2 untuk ditampilkan di kolom sumber berita
+        listBerita.append({
+            'judul': judul,
+            'isiBerita': isiContent,
+            'sumber': 'antaranews.com',
+            'modalId': 'antaranewscom'+str(xd)
+        })
+            
+
+    # for xc in range(int(dataForm['cnbc'])):
+    #     pathFileC = './db/'+'cnbcindonesia.com'+str(xc)+'.txt'
+    #     with open(pathFileC, mode='r') as cnbcFile:
+    #         content = cnbcFile.read().splitlines()
+    #         isiContent = ' '.join(map(str, content[2:]))
+    #         listBerita.append({
+    #             'judul': content[0],
+    #             'isiBerita': isiContent,
+    #             'sumber': 'cnbcindonesia.com',
+    #             'modalId': 'cnbcindonesiacom'+str(xc)
+    #         })
+    #         sentences.extend(content[2:])
+
+    # for xa in range(int(dataForm['antaranews'])):
+    #     pathFileA = './db/'+'antaranews.com'+str(xa)+'.txt'
+    #     with open(pathFileA, mode='r') as antaraFile:
+    #         content = antaraFile.read().splitlines()
+    #         isiContent = ' '.join(map(str, content[2:]))
+    #         listBerita.append({
+    #             'judul': content[0],
+    #             'isiBerita': isiContent,
+    #             'sumber': 'antaranews.com',
+    #             'modalId': 'antaranewscom'+str(xa)
+    #         })
+    #         sentences.extend(content[2:])
 
     # Bersihkan Sentences Dari empty string
     cleanSentences = [string for string in sentences if string != ""]
