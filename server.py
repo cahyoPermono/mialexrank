@@ -47,6 +47,7 @@ def mia_scrapping():
         tglMulai = data['tglMulai']
         tglSelesai = data['tglAkhir']
         kategori = data['category']
+        print(1)
 
         # dapetin list berita yang ada di portal berita
         data["listBerita"] = getDataBerita(
@@ -106,10 +107,16 @@ def getDataFromBeberapaBerita(dataForm):
                     judul = line
                 elif cnt == 1 or line[0] == '[':
                     continue
-                isiContent = isiContent + line  
+
+                # print(line)
+                # print(line.replace('Â', ''))
+                lineWithoutA = line.replace('Â', '')
+                # isiContent = isiContent + line  
+                isiContent = isiContent + lineWithoutA 
 
                 # split kalimat berdasarkan . untuk dilakukan lexrank
-                contents = (tokenize.sent_tokenize(line))
+                contents = (tokenize.sent_tokenize(lineWithoutA))
+                # print(contents)
                 # masukan kalimat ke sentences untuk dilakukan lexrank di step selanjutnya
                 for content in contents:
                     sentences.append(content)
@@ -228,13 +235,15 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
     listObjectDetik = []
 
     dalamJangkauan = True
-
+    print(2)
     while dalamJangkauan:
         # get berita dari detik
         resDetik = requests.get(
             'https://www.detik.com/search/searchall?query='+keyword+'&siteid=2&sortby=time&page=+'+str(pages))
         soupDetik = BeautifulSoup(resDetik.text, 'html.parser')
         articleDetiks = soupDetik.select('article')
+
+        print(3)
 
         # print("Detik")
         # print(pages)
@@ -378,12 +387,16 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             'https://www.antaranews.com/search/'+keyword+'/'+str(pages))
         soupAntara = BeautifulSoup(resAntara.text, 'html.parser')
 
+        print(4)
+        print('https://www.antaranews.com/search/'+keyword+'/'+str(pages))
+        
         # print("Antara")
         # print(pages)
         # print('https://www.antaranews.com/search/'+keyword+'/'+str(pages))
         # articleAntara = soupAntara.select(".post-content.clearfix article h3")[0]
         articleAntaras = soupAntara.select(".post-content.clearfix article")
-
+        print('jumlah article')
+        print(len(articleAntaras))
         if len(articleAntaras) == 0:
             dalamJangkauan = False
 
@@ -394,17 +407,10 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             # get kategori dari artikel di antaranews
             antaraCategory = articleAntara.select('p a')[0].getText()
 
-            # print(userCategory)
-            # print(antaraCategory)
-
-            # kalauu kategori tidak sama lanjut loopingan selanjutnya
-            if antaraCategory != userCategory:
-                continue
-
             antaraDateString = articleAntara.select('p span')[0].getText()
 
-            # print(antaraDate)
-            # print(search_dates(antaraDateString.lstrip())[0][1])
+            print(antaraDate)
+            print(search_dates(antaraDateString.lstrip())[0][1])
             # print(tglMulai)
             # print(tglSelesai)
             # cek perulangan khusus jpnn
@@ -421,6 +427,13 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
             # cek kalau tanggal berita lebih lama dari yang ditentukan stop looping berita
             if antaraDate < tglMulai:
                 dalamJangkauan = False
+                continue
+
+            print(userCategory)
+            print(antaraCategory)
+
+            # kalauu kategori tidak sama lanjut loopingan selanjutnya
+            if antaraCategory != userCategory:
                 continue
 
             objectAntara = {
@@ -445,6 +458,8 @@ def getDataBerita(keyword, tglMulaiString, tglSelesaiString, category):
         soupCnbcindonesia = BeautifulSoup(resCnbcindonesia.text, 'html.parser')
         articleCnbcindonesias = soupCnbcindonesia.select(
             '.list.media_rows.middle.thumb.terbaru.gtm_indeks_feed')[0].select('article')
+
+        print(5)
 
         # print("cnbc")
         # print(pages)
@@ -659,3 +674,6 @@ def deleteAllFiles():
                 shutil.rmtree(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+def remove_non_ascii(s):
+    return "".join(c for c in s if ord(c)<128)
